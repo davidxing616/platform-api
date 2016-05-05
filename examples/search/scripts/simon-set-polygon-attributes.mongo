@@ -1,0 +1,78 @@
+var settings = [
+        {
+                layerName: 'Anchor',
+                color: '#3b3b3b',
+                height: 12,
+                edgeOffset: -2
+        },
+        {
+                layerName: 'Floor',
+                color: '#24282a',
+                height: 0.3,
+                edgeOffset: 0
+        },
+        {
+                layerName: 'Wall',
+                color: '#ffffff',
+                height: 6,
+                edgeOffset: 0
+        },
+        {
+                layerName: 'Infill',
+                color: '#b4b2b0',
+                height: 4.8,
+                edgeOffset: -3.5
+        },
+        {
+                layerName: 'Polygon',
+                color: '#e3e3e3',
+                height: 5,
+                edgeOffset: -2
+        },
+        {
+                layerName: 'Entrance',
+                color: '#9f005b',
+                height: 6,
+                edgeOffset: 0
+        },
+        {
+                layerName: 'Kiosk',
+                color: '#b3b3b3',
+                height: 3,
+                edgeOffset: 0
+        },
+        {
+                layerName: 'Open',
+                color: '#ffffff',
+                height: 1,
+                edgeOffset: 0
+        }
+];
+
+
+var updatePolygons = function(venue, update, cb) {
+
+        settings.forEach(function (setting) {
+
+        var cursor = db.polygons.find({venue: venue, layer: setting.layerName});
+        var count = cursor.count();
+        print(setting.layerName + ': ' + count);
+        while (cursor.hasNext()) {
+                var x = cursor.next();
+                x.material.color = setting.color;
+                x.geometry.scale.z = setting.height;
+                x.geometry.offset = setting.edgeOffset;
+
+                if (update) {
+                        db.polygons.update({_id : x._id, venue: venue}, x);
+                        //print(x._id + " updated");
+                }
+
+        }
+        });
+
+        cb();
+}
+
+updatePolygons('ed-test', false, function () {
+});
