@@ -1,6 +1,6 @@
 var host = {
-	//search: "https://search-staging.mappedin.com"
-	search: "http://localhost:8080"
+	search: "https://search-staging.mappedin.com"
+	//search: "http://localhost:8080"
 }
 
 var key = {
@@ -66,7 +66,13 @@ var api = {
 };
 
 
-function init() {
+function init (token) {
+	map.init(venue, 'Perspective', token, function () {
+		console.log("initialized");
+		$('#map').addClass('hidden');
+
+	});
+
 
 	$("#search").keydown(function(event){
 	    if(event.keyCode == 13) {
@@ -121,6 +127,10 @@ function init() {
 	$("#venue-selector").on("selectmenuchange", function (event, ui) {
 		console.log(ui.item.value);
 		venue = ui.item.value;
+		map.init(venue, 'Perspective', token, function () {
+			console.log("initialized");
+			//$('#map').addClass('hidden');
+		});
 		searchAndDisplayResults($("#search").val().trim(), 1, function (results) {
       		setupPager(results.total, resultsPerPage, 1);
       	});
@@ -300,6 +310,7 @@ function searchAndDisplayResults(value, pageNumber, cb) {
 	api.Search(venue, {q: value, ps: resultsPerPage, pn: pageNumber}, function (results) {
    		var htmlContent = '<div>Total: ' + results.total + '</div>';
    		var sideHtml = '';
+   		map.clearHighlightPolygons();
 
    		if (results.total) {
 
@@ -327,7 +338,15 @@ function searchAndDisplayResults(value, pageNumber, cb) {
 
 
 		   			if (item.score > 4) {
-		   				sideHtml += formatLocationForSideBar(item);
+		   				if (map.locationHasPolygons(item.id)) {
+							$('#map').removeClass('hidden');
+							map.highlightLocation(item.id);
+						} else {
+							$('#map').addClass('hidden');
+
+						}
+						sideHtml += formatLocationForSideBar(item);
+
 		   			}
    				} else if (item.assetType === 'event') {
    					sideHtml += formatEventForSideBar(item);
@@ -338,8 +357,12 @@ function searchAndDisplayResults(value, pageNumber, cb) {
    				htmlContent += html;
    			});
 
-   			sideHtml += '</div>';
+   			//sideHtml += '</div>';
 
+   		}
+
+   		if (sideHtml.length == 0) {
+   			$('#map').addClass('hidden');
    		}
    		$('#side').html(sideHtml);
    		$('#results').html(htmlContent);

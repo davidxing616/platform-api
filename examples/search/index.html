@@ -7,7 +7,15 @@
   		<script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
   		<script src="scripts/jquery.paging.min.js"></script>
   		<script src="scripts/moment.min.js"></script>
+  		<script src="scripts/projective.js"></script>
+		<script src="scripts/numeric.js"></script>
+		<script src="scripts/lodash.js"></script>
+		<script src="scripts/rbush.js"></script>
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css"/>
+		<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+		<script src="scripts/Leaflet.LayerGroup.Collision.js"></script>
 		<script src="scripts/index.js"></script>
+		<script src="scripts/map.js"></script>
 
 	</head>
 
@@ -30,14 +38,20 @@
 		</div>
 
 		<div id="results-container">
-			<div id="results">
+			<div id="left">
+				<div id="results"></div>
 			</div>
-			<div id="side"></div>
+			<div id="right">
+				<div id="map"></div>
+				<div id="side">
+			</div>
+			</div>
 		</div>
 		<div class="pagination hidden"></div>
 
 		<script>
-			init();
+			var token = {};
+			init(token);
 		</script>
 	</body>
 </html>
