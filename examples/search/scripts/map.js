@@ -489,7 +489,7 @@ function createLabelMarker(location, polyData) {
 
 	// Place labels in the true center of the polygons
 	var coordinates = getCentroid(polyData.polygon);
-	console.log(coordinates)
+	//console.log(coordinates)
 	var locationIcon = L.fillIcon({className: '', html: "<div class='location-label'>" + location.name + "</div>"});
 	var marker = L.marker(coordinates, {icon: locationIcon});
 
@@ -741,10 +741,10 @@ function getCentroid (polygon) {
     var cxTimes6SignedArea = 0;
     var cyTimes6SignedArea = 0;
 
-    console.log("Getting lat/langs of")
+    //console.log("Getting lat/langs of")
 
     var points = polygon.getLatLngs()
-	console.log(points)
+	//console.log(points)
     var length = points.length
 
     var x = function (i) { return points[i % length].lat };

@@ -68,7 +68,7 @@ var api = {
 
 function init (token) {
 	map.init(venue, 'Perspective', token, function () {
-		console.log("initialized");
+		//console.log("initialized");
 		$('#map').addClass('hidden');
 
 	});
@@ -125,7 +125,7 @@ function init (token) {
 
 	$("#venue-selector").selectmenu();
 	$("#venue-selector").on("selectmenuchange", function (event, ui) {
-		console.log(ui.item.value);
+		//console.log(ui.item.value);
 		venue = ui.item.value;
 		map.init(venue, 'Perspective', token, function () {
 			console.log("initialized");
@@ -337,7 +337,7 @@ function searchAndDisplayResults(value, pageNumber, cb) {
 		   			}
 
 
-		   			if (item.score > 4) {
+		   			if (item.score > 4 || hits.length == 1) {
 		   				if (map.locationHasPolygons(item.id)) {
 							$('#map').removeClass('hidden');
 							map.highlightLocation(item.id);
