@@ -103,7 +103,7 @@ var api = {
 				type: 'GET',
 				// Remember to include the OAuth token with every API request with MappedIn servers
 				beforeSend: function (xhr) {
-					xhr.setRequestHeader("Authorization", token.token_type + ' ' + token.access_token);
+					xhr.setRequestHeader("Authorization", "Basic " + btoa(token.id + ":" + token.secret));
 				},
 				success: cb
 			});
@@ -186,14 +186,8 @@ function initMap (tiles) {
 	// Here we are calculating the maximum zoom level available for our currently select map perspective.
 	// The maximum zoom level is same as the maximum tile layer {z} available from our servers.
 	var maxZoom = Math.ceil(Math.log((Math.max(perspective.size.height, perspective.size.width)))/Math.log(2)) - 8;
-	tileLayer = new L.tileLayer(url, {
-		zoomOffset: 8,
-		zoom: defaultZoom,
-		minZoom: 0,
-		maxZoom: maxZoom,
-		noWrap: true,
-		continuousWorld: true
-	})
+
+
 
 	// Setting up the Leaflet map layers
 	leaflet.map = L.map('map', {
@@ -202,14 +196,29 @@ function initMap (tiles) {
 		minZoom: 0,
 		maxZoom: maxZoom,
 		center: [0,0]
-	}).addLayer(tileLayer);
+	});
+
+	leaflet.maxBounds = getMaxBounds();
+	leaflet.map.setMaxBounds(leaflet.maxBounds);
+
+
+	tileLayer = new L.tileLayer(url, {
+		zoomOffset: 8,
+		zoom: defaultZoom,
+		minZoom: 0,
+		maxZoom: maxZoom,
+		noWrap: true,
+		continuousWorld: true,
+		unloadInvisibleTiles: true,
+		bounds: leaflet.maxBounds
+	});
+
+	leaflet.map.addLayer(tileLayer);
 
 	leaflet.map.setZoom(defaultZoom);
 
 	// Setting up the max bounds for the map since our venue is not as big as the world
-	leaflet.maxBounds = getMaxBounds();
-	leaflet.map.setMaxBounds(leaflet.maxBounds);
-
+	leaflet.fitWorld();
 }
 
 /**
@@ -251,14 +260,7 @@ function changeMap(perspectiveName) {
 	// The maximum zoom level is same as the maximum tile layer {z} available from our servers.
 	var maxZoom = Math.ceil(Math.log((Math.max(perspective.size.height, perspective.size.width)))/Math.log(2)) - 8;
 
-	tileLayer = new L.tileLayer(url, {
-		zoomOffset: 8,
-		zoom: defaultZoom,
-		minZoom: 0,
-		maxZoom: maxZoom,
-		noWrap: true,
-		continuousWorld: true
-	})
+
 
 	leaflet.map = L.map('map', {
 		crs: L.CRS.Simple,
@@ -266,14 +268,28 @@ function changeMap(perspectiveName) {
 		minZoom: 0,
 		maxZoom: maxZoom,
 		center: [0,0]
-	}).addLayer(tileLayer);
-	leaflet.map.setZoom(defaultZoom);
-
+	});
 
 	// Setting up the max bounds for the map since our venue is not as bug as the world
 	leaflet.maxBounds = getMaxBounds();
 	leaflet.map.setMaxBounds(leaflet.maxBounds);
+
+	tileLayer = new L.tileLayer(url, {
+		zoomOffset: 8,
+		zoom: defaultZoom,
+		minZoom: 0,
+		maxZoom: maxZoom,
+		noWrap: true,
+		continuousWorld: true,
+		bounds: leaflet.maxBounds,
+		unloadInvisibleTiles: true
+	});
+
+	leaflet.map.addLayer(tileLayer);
+	leaflet.map.setZoom(defaultZoom);
+
 	leaflet.map.fitWorld();
+
 
 	getModelData(function(){
 		initMapInteraction();
@@ -284,7 +300,8 @@ function changeMap(perspectiveName) {
 			var location = cache.locations[i]
 
 			for (var j = 0; j < location.polygons.length; j++) {
-				var polyData =  cache.polygons[location.polygons[j].id]
+				var polyData =  cache.polygons[location.polygons[j].id];
+				if (!polyData) continue;
 				if (polyData.map == map.id && (polyData._locations == null || polyData._locations[location.id] == null)) {
 					var polygon = createPolygon(polyData)
 					leaflet.map.addLayer(polygon)
@@ -529,10 +546,16 @@ function highlightPolygon(id, style) {
 
 this.locationHasPolygons = function (locationId) {
 	var location = cache.locationsById[locationId];
-	if (!location || !location.polygons) return false;
+
+	if (!location || !location.polygons) {
+		//console.log("not location or polygon");
+		return false;
+	}
 	if (location.polygons.length > 0) {
+		//console.log("has polygon");
 		return true;
 	}
+	//console.log("no polygon");
 	return false;
 }
 
@@ -547,7 +570,7 @@ this.highlightLocation = function (locationId) {
 
 		var center = getCentroid(polyData.polygon)
 		//leaflet.map.setZoom(4);
-		leaflet.map.setView(center, 2);
+		leaflet.map.setView(center, 3);
 
 		//leaflet.map.panTo(new L.LatLng(center[0], center[1]));
 	});
@@ -729,8 +752,8 @@ function drawDirections(venueId, start, end) {
 * does not scroll outside the map bounds
 **/
 function getMaxBounds() {
-	var southWest = leaflet.map.unproject([0, perspective.size.height], leaflet.map.getMaxZoom());
-	var northEast = leaflet.map.unproject([perspective.size.width, 0], leaflet.map.getMaxZoom());
+	var southWest = leaflet.map.unproject([1, perspective.size.height], leaflet.map.getMaxZoom());
+	var northEast = leaflet.map.unproject([perspective.size.width, 1], leaflet.map.getMaxZoom());
 	return new L.LatLngBounds(southWest, northEast);
 }
 

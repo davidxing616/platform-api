@@ -230,9 +230,7 @@ function formatLocationForSideBar(item) {
 
 	html += '<div class="header">';
 
-	if (item.logo && item.logo.small) {
-		html +='<div class="logo"><img src="' + item.logo.small+ '"></div>';
-	}
+
 
 	html += '<div class="right">';
 
@@ -242,6 +240,15 @@ function formatLocationForSideBar(item) {
 	});
 
 	html += '</div>';
+
+	if (item.logo) {
+		if (item.logo.small) {
+			html +='<div class="logo"><img src="' + item.logo.small+ '"></div>';
+		} else if (item.logo.original) {
+			html +='<div class="logo"><img src="' + item.logo.original+ '"></div>';
+		}
+	}
+
 	html += '</div>';
 
 	html += '<div class="description">' + item.description + '</div>'

@@ -83,6 +83,8 @@ input:focus {
 
 #results-container {
 	display: flex;
+	margin: 0 50 0 70;
+
 }
 
 #left {
@@ -93,8 +95,7 @@ input:focus {
 
 /* results styles */
 #results {
-	/* margin: 30 70 30 70;
-	flex-grow: 3;*/
+	/*margin: 0 70 0 70;*/
 }
 
 .results-row {
@@ -112,8 +113,8 @@ input:focus {
 .results-row .description {
 	margin: 0 auto;
 	width: 100%;
-	line-height: 1.5em;
-	max-height: calc(1.5em * 5);
+	line-height: 1.2em;
+	max-height: calc(1.2em * 5);
 	overflow: hidden;
 }
 
@@ -136,12 +137,28 @@ input:focus {
 
 }
 
+/* map styles */
 #map {
 	min-width: 300px;
 	height: 300px;
+	background-color: #fff;
+	box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.2);
+}
+
+
+.leaflet-bar .leaflet-control-zoom-in {
+	border-radius: 0px !important;
+}
+
+.leaflet-bar .leaflet-control-zoom-out {
+	border-radius: 0px !important;
 }
 
 /* side bar events styles */
+.side-row-event {
+	max-width: 300px;
+}
+
 .side-row-event .image {
 	height: 100px;
 	margin: 10px 0px;
@@ -171,6 +188,7 @@ input:focus {
 .side-row-location {
 	border: 1px solid #ebebeb;
 	padding: 10px;
+	box-shadow: 0px 1px 4px 0px rgba(0,0,0,0.2);
 }
 
 .side-row-location .header {
@@ -191,7 +209,8 @@ input:focus {
 	margin: 10 10 10 0;
 }
 .side-row-location .header .name {
-	color: #007afb;
+	font-size: 1.75em;
+	/* color: #007afb;*/
 }
 
 .side-row-location .header .category {

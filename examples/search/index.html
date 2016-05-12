@@ -1,6 +1,5 @@
 <html>
 	<head>
-		<link rel="stylesheet" type="text/css" href="css/style.css">
 		  <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
 
 		<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
@@ -16,6 +15,8 @@
 		<script src="scripts/Leaflet.LayerGroup.Collision.js"></script>
 		<script src="scripts/index.js"></script>
 		<script src="scripts/map.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="css/style.css">
 
 	</head>
 
@@ -50,8 +51,11 @@
 		<div class="pagination hidden"></div>
 
 		<script>
-			var token = {};
-			init(token);
+			var mikey = {
+				id: '570f148fab0b3049bc000000',
+				secret: 'c18ecb6687bb556f803afcc09af3ed53'
+			}
+			init(mikey);
 		</script>
 	</body>
 </html>
