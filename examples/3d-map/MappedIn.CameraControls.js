@@ -321,7 +321,15 @@ MappedIn.CameraControls = function (camera, canvas) {
 
 			document.addEventListener( 'mousemove', onMouseMove, false );
 			document.addEventListener( 'mouseup', onMouseUp, false );
-			document.addEventListener( 'mouseout', onMouseUp, false );
+			document.addEventListener( 'mouseout', function (event) {
+				if (event.toElement._mAnchor || event.toElement == scope.canvas || event.toElement.parentElement == scope.canvas) {
+					//console.log("Bullet dodged")
+					return false
+				} else {
+					console.log(event)
+					onMouseUp(event)
+				}
+			}, false );
 
 			//scope.dispatchEvent( startEvent );
 
@@ -330,6 +338,7 @@ MappedIn.CameraControls = function (camera, canvas) {
 	}
 
 	function onMouseMove( event ) {
+		console.log("moved")
 
 		if ( scope.enabled === false ) return;
 
