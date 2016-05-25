@@ -175,44 +175,42 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	this.createMarker = function(text, position, className) {
-		var element = document.createElement('div')
-		element.className = className
-		element.innerHTML = text
-		element.style.position = 'absolute'
+		var marker = document.createElement('div')
+		marker.className = className
+		marker.innerHTML = text
+		marker.style.position = 'absolute'
 
-		element._mPosition = position
-		element.style.top = "0px"
-		element.style.left = "0px"
+		marker._mHidden = true
+		//marker._mOffScreen = true
+		marker._oldOpacity = marker.style.opacity
+		marker.style.opacity = 0
+
+		marker._mPosition = position
+		marker.style.top = "0px"
+		marker.style.left = "0px"
 		//
 
-		scope.canvas.appendChild(element)
-		markers.push(element)
+		scope.canvas.appendChild(marker)
+		markers.push(marker)
 
-		var anchor = Matter.Bodies.rectangle(0, 0, 10, 10, {
-			friction: 1.0,
-			frictionStatic: 1,
-			frictionAir: 1,
-			density: 1000,
-			//
+		var anchor = Matter.Bodies.rectangle(0, 0, 1, 1, {
+			isStatic: true,
 			collisionFilter: {
 				group: -1,
 				mask: 0
 			}
 		})
-		element._mAnchor = anchor
+		marker._mAnchor = anchor
 
-		var shadowElement = Matter.Bodies.rectangle(0, 0, element.offsetWidth + (markerBuffer * 2), element.offsetHeight + (markerBuffer * 2) , {
-			density: 0.1,
+		var shadowElement = Matter.Bodies.rectangle(0, 0, marker.offsetWidth + (markerBuffer * 2), marker.offsetHeight + (markerBuffer * 2) , {
 			slop: markerSlop,
-			//restitution: .1,
-			inertia: Infinity,
 			sleepThreshold: 1,
-			frictionAir: 0.2,
-			frictionStatic: 0.1
+			//frictionAir: 0.2,
+			//frictionStatic: 0.1
 		})
 
-		element._mShadowElement = shadowElement
-		Matter.World.add(physics.world, [anchor, shadowElement])
+		marker._mShadowElement = shadowElement
+		Matter.World.add(physics.world, anchor)
 		var constraint = Matter.Constraint.create({
 			bodyA: anchor,
 			bodyB: shadowElement,
@@ -220,10 +218,77 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			length: 1
 
 		})
+		marker._mConstraint = constraint
 		constraints[shadowElement.id] = constraint
-		Matter.World.add(physics.world, [constraint])
-		updateMarkerPosition(element)
-		Matter.Body.translate(element._mShadowElement, Matter.Vector.sub(element._mAnchor.position, Matter.Vector.create(1,1)))
+		//Matter.World.add(physics.world, [constraint])
+
+		showMarker(marker)
+	}
+
+	var showMarker = function(marker) {
+
+		if (marker._mCameraHidden != true && marker._mOffScreen != true && marker._mHidden) {
+			marker._mHidden = false
+			Matter.World.add(physics.world, marker._mShadowElement)
+			Matter.World.add(physics.world, marker._mConstraint)
+			marker.style.opacity = marker._oldOpacity
+			//Matter.Body.translate(marker._mShadowElement, Matter.Vector.sub(marker._mAnchor.position, marker._mShadowElement.position))
+			updateMarkerPosition(marker)
+
+			Matter.Body.update(marker._mShadowElement, 2.0, 1.0, 0.0)
+			
+			//Matter.Body.applyForce(marker._mShadowElement, marker._mShadowElement.position, 10000.0)
+			
+		}
+	}
+
+	var hideMarker = function (marker) {
+		//console.log(physics.world.bodies)
+		if (marker._mHidden != true) {
+			marker._mHidden = true
+			console.log("Hiding " + marker.innerHTML)
+			marker._oldOpacity = marker.style.opacity
+			marker.style.opacity = 0
+			Matter.World.remove(physics.world, marker._mConstraint)
+			Matter.World.remove(physics.world, marker._mShadowElement)
+
+		}
+	}
+
+	this.showMarkersForCamera = function() {
+		console.log("Showing all markers")
+		for (marker of markers) {
+			marker._mCameraHidden = false
+			showMarker(marker)
+		}
+	}
+
+	this.hideMarkersForCamera = function () {
+		console.log("Hiding all markers")
+		for (marker of markers) {
+			marker._mCameraHidden = true
+			hideMarker(marker)
+		}
+	}
+
+	var constraintsFrozen = false
+	// Make the contstraints attaching a marker to it's anchor very ridged for tight panning
+	var freezeMarkers = function () {
+		constraintsFrozen = true
+		for (key of Object.keys(constraints)) {
+			constraints[key]._oldStiffness = constraints[key].stiffness
+			constraints[key].stiffness = 1.0
+
+		}
+	}
+
+	// Reset the constraint rigidity
+	var thawMarkers = function () {
+		constraintsFrozen = false
+		for (key of Object.keys(constraints)) {
+			constraints[key].stiffness = constraints[key]._oldStiffness
+
+		}
 	}
 
 	this.getPositionPolygon = function (polygonId) {
@@ -253,38 +318,51 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		var left = (projection.x + 1)  / 2 * scope.canvas.offsetWidth// - width
 		var top = (-projection.y + 1) / 2 * scope.canvas.offsetHeight// - height
-
-		if (left < -scope.canvas.offsetWidth * .20 || left > scope.canvas.offsetWidth * 1.2 || top < -scope.canvas.offsetHeight * .20 || top > scope.canvas.offsetHeight * 1.2) {
-			//marker.style.visibility = "hidden"
-			if (!marker._oldOpacity) {
-				marker._oldOpacity = marker.style.opacity
-				marker.style.opacity = 0
-			}
-			return
-		} else if (marker.style.opacity == 0) {
-			//marker.style.visibility = "visible"
-			marker.style.opacity = marker._oldOpacity
-			marker._oldOpacity = null
-
-		}
-
-		var target = Matter.Vector.create(left, top)
-		if (constraints[marker._mShadowElement.id].length > 1) {
-			constraints[marker._mShadowElement.id].length *= .9
-		}
-		if (constraints[marker._mShadowElement.id].stiffness < .7) {
-			constraints[marker._mShadowElement.id].stiffness *= 1.5
-		}
 		
 
 		//Matter.Body.setPosition(marker._mAnchor, {x: left, y: top})
 		//Matter.Body.setVelocity(marker._mAnchor, {x: 0, y: 0})
+
+		var target = Matter.Vector.create(left, top)
+		//Matter.Body.setStatic(marker._mAnchor, false)
 		Matter.Body.translate(marker._mAnchor, Matter.Vector.sub(target, marker._mAnchor.bounds.min))
 		Matter.Body.setAngularVelocity(marker._mShadowElement, 0)
+		
+		
 		//marker._mAnchorP.left = left
 
 		//if (marker._lastPosition)
 		marker.style.transform = "translate(" + (marker._mShadowElement.position.x - (marker.offsetWidth / 2)) + "px, " + (marker._mShadowElement.position.y - (marker.offsetHeight /2)) + "px)"
+
+		if (left < -scope.canvas.offsetWidth * .20 || left > scope.canvas.offsetWidth * 1.2 || top < -scope.canvas.offsetHeight * .20 || top > scope.canvas.offsetHeight * 1.2) {
+			
+			//marker.style.visibility = "hidden"
+			if (!marker._mOffScreen) {
+				console.log("Should be hiding " + marker.innerHTML)
+				// marker._oldOpacity = marker.style.opacity
+				// marker.style.opacity = 0
+				marker._mOffScreen = true
+				hideMarker(marker)
+			}
+			return
+		} else if (marker._mOffScreen) {
+			//marker.style.visibility = "visible"
+			// marker.style.opacity = marker._oldOpacity
+			// marker._oldOpacity = null
+			marker._mOffScreen = false
+			showMarker(marker)
+
+		}
+
+		
+		if (constraintsFrozen == false) {
+			if (constraints[marker._mShadowElement.id].length > 1) {
+				constraints[marker._mShadowElement.id].length *= .9
+			}
+			if (constraints[marker._mShadowElement.id].stiffness < .7) {
+				constraints[marker._mShadowElement.id].stiffness *= 1.5
+			}
+		}
 	}
 
 	this.displayTitle = function (location) {
@@ -503,8 +581,11 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	var render = function() {
+		//console.log("Runner: " + runner.enabled)
 		console.log("render")
 		//requestAnimationFrame( this.render.bind(this) );
+
+		scope.controls.update()
 
 		// Check if we are hovering over a polygon
 		var polygon = detectPolygonUnderMouse()
@@ -530,16 +611,19 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		renderer.render( scope.scene, scope.camera );
 		//requestAnimationFrame(this.doRender.bind(this));
 		renderFrames--
-		scope.tryRendering()
+		if (renderFrames > 0) {
+			requestAnimationFrame(render)
+		}
 	}
 
+	var bonusFrames = 300 // Render this many frames after the last tryRender call to account for physics
 	this.tryRendering = function () {
-		if (renderFrames < 0) {
-			return
-		} else if (renderFrames < 120){
-			renderFrames = 120
-		} else {
+		if (renderFrames <= 0) {
+			renderFrames = bonusFrames
 			requestAnimationFrame(render)
+			return
+		} else if (renderFrames < bonusFrames){
+			renderFrames = bonusFrames
 		}
 		
 	}
@@ -565,7 +649,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 				//this.constraints[pair.bodyA.id].length *= 1.1	
 			}
 		}
-		scope.tryRendering()
+		//scope.tryRendering()
 	}
 
 
@@ -598,7 +682,6 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	//this.raycaster.far = 10000
 
 	this.controls = new MappedIn.CameraControls(this.camera, this.canvas)
-	this.controls.addEventListener( 'change', scope.tryRendering );
 
 	this.controls.enableDamping = true;
 	this.controls.dampingFactor = 0.25;
@@ -615,6 +698,20 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	this.controls.minAzimuthAngle = .2 - Math.PI / 2
 	this.controls.minDistance = 100
 	this.controls.maxDistance = 15000
+
+	this.controls.addEventListener( this.controls.CAMERA_EVENTS.CHANGE_EVENT.type, scope.tryRendering );
+
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.ZOOM_START_EVENT.type, this.hideMarkersForCamera)
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.ROTATE_START_EVENT.type, this.hideMarkersForCamera)
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_START_EVENT.type, this.hideMarkersForCamera)
+
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.ZOOM_END_EVENT.type, this.showMarkersForCamera)
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.ROTATE_END_EVENT.type, this.showMarkersForCamera)
+	this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_END_EVENT.type, this.showMarkersForCamera)
+
+	//this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_START_EVENT.type, freezeMarkers)
+	//this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_END_EVENT.type, thawMarkers)
+
 
 	//Need to handle multi-maps
 	this.currentMap = Object.keys(this.venue.maps)[0]
@@ -670,6 +767,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	var wallWidth = 100
 
+	// Need to make this responsive
 	var walls = [
 		Matter.Bodies.rectangle(this.canvas.offsetWidth / 2, -wallWidth, this.canvas.offsetWidth, wallWidth * 2, wallOptions),
 		Matter.Bodies.rectangle(-wallWidth, this.canvas.offsetHeight / 2, wallWidth * 2, this.canvas.offsetHeight, wallOptions),
@@ -683,8 +781,10 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	Matter.Events.on(physics, "collisionActive", onCollisionActive)
 	//Matter.Events.on(physics, "afterTick", scope.tryRendering)
+	
 	// run the engine
-	Matter.Engine.run(physics);
+	// Tie this into the render loop someday, if we can
+	var runner = Matter.Engine.run(physics);
 
 	this.tryRendering();
 }
