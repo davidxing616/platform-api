@@ -26,6 +26,8 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	this.maps = {}
 	this.font = {}
 
+	var clock = new THREE.Clock(true)
+
 	var markerSlop = .5;
 	var markerBuffer = 5
 
@@ -256,7 +258,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	this.showMarkersForCamera = function() {
-		console.log("Showing all markers")
+		//console.log("Showing all markers")
 		for (marker of markers) {
 			marker._mCameraHidden = false
 			showMarker(marker)
@@ -264,7 +266,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	this.hideMarkersForCamera = function () {
-		console.log("Hiding all markers")
+		//console.log("Hiding all markers")
 		for (marker of markers) {
 			marker._mCameraHidden = true
 			hideMarker(marker)
@@ -318,37 +320,21 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		var left = (projection.x + 1)  / 2 * scope.canvas.offsetWidth// - width
 		var top = (-projection.y + 1) / 2 * scope.canvas.offsetHeight// - height
-		
 
-		//Matter.Body.setPosition(marker._mAnchor, {x: left, y: top})
-		//Matter.Body.setVelocity(marker._mAnchor, {x: 0, y: 0})
 
 		var target = Matter.Vector.create(left, top)
-		//Matter.Body.setStatic(marker._mAnchor, false)
 		Matter.Body.translate(marker._mAnchor, Matter.Vector.sub(target, marker._mAnchor.bounds.min))
 		Matter.Body.setAngularVelocity(marker._mShadowElement, 0)
-		
-		
-		//marker._mAnchorP.left = left
 
-		//if (marker._lastPosition)
 		marker.style.transform = "translate(" + (marker._mShadowElement.position.x - (marker.offsetWidth / 2)) + "px, " + (marker._mShadowElement.position.y - (marker.offsetHeight /2)) + "px)"
 
 		if (left < -scope.canvas.offsetWidth * .20 || left > scope.canvas.offsetWidth * 1.2 || top < -scope.canvas.offsetHeight * .20 || top > scope.canvas.offsetHeight * 1.2) {
-			
-			//marker.style.visibility = "hidden"
 			if (!marker._mOffScreen) {
-				console.log("Should be hiding " + marker.innerHTML)
-				// marker._oldOpacity = marker.style.opacity
-				// marker.style.opacity = 0
 				marker._mOffScreen = true
 				hideMarker(marker)
 			}
 			return
 		} else if (marker._mOffScreen) {
-			//marker.style.visibility = "visible"
-			// marker.style.opacity = marker._oldOpacity
-			// marker._oldOpacity = null
 			marker._mOffScreen = false
 			showMarker(marker)
 
@@ -581,11 +567,10 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	var render = function() {
-		//console.log("Runner: " + runner.enabled)
-		console.log("render")
-		//requestAnimationFrame( this.render.bind(this) );
-
+		//console.log("render")
 		scope.controls.update()
+
+		Matter.Engine.update(physics, clock.getDelta())
 
 		// Check if we are hovering over a polygon
 		var polygon = detectPolygonUnderMouse()
@@ -606,7 +591,6 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			updateMarkerPosition(marker)
 		}
 
-		//Matter.Engine.update(physics, this._clock.getDelta())
 
 		renderer.render( scope.scene, scope.camera );
 		//requestAnimationFrame(this.doRender.bind(this));
@@ -784,7 +768,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	
 	// run the engine
 	// Tie this into the render loop someday, if we can
-	var runner = Matter.Engine.run(physics);
+	//var runner = Matter.Engine.run(physics);
 
 	this.tryRendering();
 }
