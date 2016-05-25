@@ -248,7 +248,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		//console.log(physics.world.bodies)
 		if (marker._mHidden != true) {
 			marker._mHidden = true
-			console.log("Hiding " + marker.innerHTML)
+			//console.log("Hiding " + marker.innerHTML)
 			marker._oldOpacity = marker.style.opacity
 			marker.style.opacity = 0
 			Matter.World.remove(physics.world, marker._mConstraint)
@@ -676,10 +676,10 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	//this.controls.update()
 	
 	// Set camera contstraints
-	this.controls.maxPolarAngle = Math.PI - .2
-	this.controls.minPolarAngle = .2
-	this.controls.maxAzimuthAngle = Math.PI / 2 - .2
-	this.controls.minAzimuthAngle = .2 - Math.PI / 2
+	//this.controls.maxPolarAngle = Math.PI - .2
+	//this.controls.minPolarAngle = .2
+	//this.controls.maxAzimuthAngle = Math.PI / 2 - .2
+	//this.controls.minAzimuthAngle = .2 - Math.PI / 2
 	this.controls.minDistance = 100
 	this.controls.maxDistance = 15000
 

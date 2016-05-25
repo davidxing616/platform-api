@@ -15,8 +15,8 @@ MappedIn.CameraControls = function (camera, canvas) {
 	this.minZoom = 100
 	this.maxZoom = 10000
 
-	this.minAzimuthAngle = .1
-	this.maxAzimuthAngle = 1
+	this.minTilt = 0
+	this.maxTilt = 1.2
 
 	this.mouseButtons = { ORBIT: THREE.MOUSE.RIGHT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.LEFT };
 	var scope = this
@@ -119,8 +119,7 @@ MappedIn.CameraControls = function (camera, canvas) {
 		if (state ==  STATE.NONE) {
 			scope.dispatchEvent(rotateStartEvent)
 		}
-
-		scope.elevation.rotation.x += radians
+		scope.elevation.rotation.x = Math.max(Math.min(scope.elevation.rotation.x + radians, scope.maxTilt), scope.minTilt)
 
 		if (state == STATE.NONE) {
 			scope.dispatchEvent(rotateEndEvent)
