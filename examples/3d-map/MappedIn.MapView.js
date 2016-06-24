@@ -14,14 +14,14 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	this.highlightedPolygons = {}
 	this.scene = new THREE.Scene();
 	this.camera = new THREE.PerspectiveCamera( 40, this.canvas.offsetWidth / this.canvas.offsetHeight, 10, 20000 );
-	
+
 	var cameraElevation = new THREE.Object3D()
 	cameraElevation.add(this.camera)
-	
+
 	var cameraOrbit = new THREE.Object3D()
 	cameraOrbit.add(cameraElevation)
 	this.scene.add(cameraOrbit)
-	
+
 	this.currentMap = null
 	this.maps = {}
 	this.font = {}
@@ -91,9 +91,18 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		mapLoadedCallback()
 	}
 
+	function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      }
+
 	var calculateMouseCoordinates = function() {
-		mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
-		mouse.y = - ( event.clientY / renderer.domElement.height ) * 2 + 1;
+		var pos = getMousePos(renderer.domElement, event);
+		mouse.x = ( pos.x / renderer.domElement.width ) * 2 - 1;
+		mouse.y = - ( pos.y / renderer.domElement.height ) * 2 + 1;
 	}
 
 	var onMouseMove = function( event ) {
@@ -102,7 +111,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		scope.tryRendering();
 	}
 
-	var onMouseClick = function(event) { 
+	var onMouseClick = function(event) {
 		event.preventDefault();
 		calculateMouseCoordinates()
 
@@ -238,9 +247,9 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			updateMarkerPosition(marker)
 
 			Matter.Body.update(marker._mShadowElement, 2.0, 1.0, 0.0)
-			
+
 			//Matter.Body.applyForce(marker._mShadowElement, marker._mShadowElement.position, 10000.0)
-			
+
 		}
 	}
 
@@ -340,7 +349,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		}
 
-		
+
 		if (constraintsFrozen == false) {
 			if (constraints[marker._mShadowElement.id].length > 1) {
 				constraints[marker._mShadowElement.id].length *= .9
@@ -385,7 +394,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		var bounds = textMesh.geometry.boundingBox
 		//console.log(bounds)
-		var size = new THREE.Vector3(0, 0, 0) 
+		var size = new THREE.Vector3(0, 0, 0)
 		size.copy(bounds.max)
 		size.sub(bounds.min)
 
@@ -412,7 +421,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			linewidth: 10
 		});
 
-		var materialBad = new THREE.MeshBasicMaterial( { color: 0xff0000} ); 
+		var materialBad = new THREE.MeshBasicMaterial( { color: 0xff0000} );
 
 
 		scope.scene.add(textMesh)
@@ -447,8 +456,8 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	var findLongestSide = function (polygon) {
 		var max = {
-			length: -1, 
-			a: Matter.Vector.create(0, 0), 
+			length: -1,
+			a: Matter.Vector.create(0, 0),
 			b: Matter.Vector.create(0, 0),
 			angle: 0
 		}
@@ -474,8 +483,8 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	var twoPi = Math.PI * 2
 	var findNodeEntrance = function (polygon) {
 		var min = {
-			length: 1000000, 
-			a: new THREE.Vector2(0, 0), 
+			length: 1000000,
+			a: new THREE.Vector2(0, 0),
 			b: new THREE.Vector2(0, 0),
 			mid: new THREE.Vector2(0, 0),
 			node: new THREE.Vector2(0,0),
@@ -536,7 +545,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			var vector2 = new THREE.Vector2(vertex2.x, vertex2.y)
 
 			min.geometry.vertices.push(new THREE.Vector3(vector1.x, vector1.y, polygon.geometry.scale.z * 6))
-			
+
 			vectorMid.copy(vector1).add(vector2).divideScalar(2)
 			//console.log(vectorMid.divideScalar(2))
 			delta.subVectors(vectorMid, vectorNode)
@@ -559,9 +568,9 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			}
 		}
 
-		if ((min.angle < min.nodeAngle && (min.angle - min.nodeAngle > -(Math.PI))) || (min.nodeAngle - min.angle < -(Math.PI)  && min.angle > min.nodeAngle )) {	
-			min.angle = min.angle - Math.PI	
-		} 
+		if ((min.angle < min.nodeAngle && (min.angle - min.nodeAngle > -(Math.PI))) || (min.nodeAngle - min.angle < -(Math.PI)  && min.angle > min.nodeAngle )) {
+			min.angle = min.angle - Math.PI
+		}
 
 		return min
 	}
@@ -578,7 +587,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		if (polygon != lastHover) {
 			if (lastHover) {
 				onPolygonMouseOut(lastHover)
-				lastHover = null 
+				lastHover = null
 			}
 
 			if (polygon) {
@@ -609,7 +618,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		} else if (renderFrames < bonusFrames){
 			renderFrames = bonusFrames
 		}
-		
+
 	}
 
 	var fontLoader = new THREE.FontLoader();
@@ -630,7 +639,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 			}
 			if (constraints[pair.bodyB.id].stiffness > 0.01) {
 				constraints[pair.bodyB.id].stiffness *= .5
-				//this.constraints[pair.bodyA.id].length *= 1.1	
+				//this.constraints[pair.bodyA.id].length *= 1.1
 			}
 		}
 		//scope.tryRendering()
@@ -639,7 +648,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	//_clock = new THREE.Clock(true)
 
-	
+
 	canvas.appendChild(renderer.domElement );
 
 	window.addEventListener( 'mousemove', onMouseMove, false );
@@ -655,7 +664,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	directionalLight.position.set( -150, -150, 350);
 	//this.directionalLight.castShadow = true
 	this.scene.add( directionalLight );
-	
+
 	var hemisphericalLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.77)
 	this.scene.add(hemisphericalLight)
 
@@ -674,7 +683,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	// Set the default angle
 	cameraElevation.rotation.x = .6
 	//this.controls.update()
-	
+
 	// Set camera contstraints
 	//this.controls.maxPolarAngle = Math.PI - .2
 	//this.controls.minPolarAngle = .2
@@ -765,7 +774,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	Matter.Events.on(physics, "collisionActive", onCollisionActive)
 	//Matter.Events.on(physics, "afterTick", scope.tryRendering)
-	
+
 	// run the engine
 	// Tie this into the render loop someday, if we can
 	//var runner = Matter.Engine.run(physics);
