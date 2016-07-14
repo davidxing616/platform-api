@@ -1,5 +1,5 @@
 var host = {
-	search: "https://search-staging.mappedin.com"
+	search: "https://search.mappedin.com"
 	//search: "http://localhost:8080"
 }
 
