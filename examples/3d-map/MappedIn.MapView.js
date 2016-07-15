@@ -454,6 +454,21 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	}
 
+	// Useful for path debugging
+	this.showNode = function (node) {
+
+		var geometry = new THREE.SphereGeometry( 5, 3, 2 );
+		var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+		var sphere = new THREE.Mesh( geometry, material );
+
+		sphere.translateX(node.x - (venue.maps[scope.currentMap].width / 2))
+		sphere.translateY(-node.y + (venue.maps[scope.currentMap].height / 2))
+		sphere.translateZ(5)
+
+		scope.scene.add( sphere );
+	}
+
+
 	var findLongestSide = function (polygon) {
 		var max = {
 			length: -1,
