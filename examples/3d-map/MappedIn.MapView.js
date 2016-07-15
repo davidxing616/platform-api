@@ -400,7 +400,8 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		textMesh.translateX(max.mid.x - (venue.maps[scope.currentMap].width / 2))
 		textMesh.translateY(-max.mid.y + (venue.maps[scope.currentMap].height / 2))
-		textMesh.translateZ(polygon.geometry.scale.z * 6.5)
+		textMesh.translateZ(1 + polygon.geometry.scale.z / (1000/Math.max(venue.maps[scope.currentMap].width, venue.maps[scope.currentMap].height)))
+
 
 		console.log(text)
 		//console.log(max.angle)
