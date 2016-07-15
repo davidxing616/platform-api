@@ -731,8 +731,12 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	mtlLoader.crossOrigin='*'
 	mtlLoader.scene = this.scene
 	// Set this dynamically later
-	mtlLoader.setBaseUrl( 'https://d3j72de684fey1.cloudfront.net/uploads/' );
-	//mtlLoader.setPath( 'https://d3j72de684fey1.cloudfront.net/uploads/' );
+
+	var baseUrlRegex = new RegExp(".*\/")
+	var baseUrl = baseUrlRegex.exec(mtl)[0]
+
+	mtlLoader.setBaseUrl( baseUrl);
+	
 	mtlLoader.load( mtl, mtlLoaded);
 
 
