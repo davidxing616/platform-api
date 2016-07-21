@@ -362,7 +362,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	this.displayTitle = function (location) {
 		for (polygon of location.polygons) {
-			scope.drawText(venue.polygons[polygon.id], location.name)
+			scope.shiwText(venue.polygons[polygon.id], location.name)
 		}
 	}
 
@@ -457,8 +457,8 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 	// Useful for path debugging
 	this.showNode = function (node) {
-
-		var geometry = new THREE.SphereGeometry( 5, 3, 2 );
+2
+		var geometry = new THREE.SphereGeometry( 10,5, 5);
 		var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 		var sphere = new THREE.Mesh( geometry, material );
 
@@ -618,6 +618,9 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 
 		renderer.render( scope.scene, scope.camera );
+		if (scope.controls.postRender) {
+			scope.controls.postRender()
+		}
 		//requestAnimationFrame(this.doRender.bind(this));
 		renderFrames--
 		if (renderFrames > 0) {
@@ -690,7 +693,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	//this.raycaster.near = 0
 	//this.raycaster.far = 10000
 
-	this.controls = new MappedIn.CameraControls(this.camera, this.canvas)
+	this.controls = new MappedIn.CameraControls(this.camera, renderer.domElement, this.scene)
 
 	this.controls.enableDamping = true;
 	this.controls.dampingFactor = 0.25;

@@ -1,4 +1,4 @@
-MappedIn.CameraControls = function (camera, canvas) {
+MappedIn.CameraControls = function (camera, canvas, scene) {
 	this.camera = camera
 	this.canvas = canvas
 	this.elevation = camera.parent
@@ -21,17 +21,30 @@ MappedIn.CameraControls = function (camera, canvas) {
 	this.mouseButtons = { ORBIT: THREE.MOUSE.RIGHT, ZOOM: THREE.MOUSE.MIDDLE, PAN: THREE.MOUSE.LEFT };
 	var scope = this
 
+	var cameraPlaneGeometery = new THREE.PlaneGeometry(1000000, 1000000) // Should set this to be the map bounds later
+	var cameraPlaneMaterial = new THREE.MeshBasicMaterial( {color: 0x000000, visible: false });
+	var cameraPlane = new THREE.Mesh(cameraPlaneGeometery, cameraPlaneMaterial)
+
+	var raycaster = new THREE.Raycaster();
+
+	//cameraPlane.translateZ(5)
+	//cameraPlane.visible = false
+	scene.add(cameraPlane)
+
 	var STATE = { NONE : - 1, ROTATE : 0, DOLLY : 1, PAN : 2, TOUCH_ROTATE : 3, TOUCH_DOLLY : 4, TOUCH_PAN : 5 };
 
 	var state = STATE.NONE;
+
+	var mouse = new THREE.Vector2();
 
 	var rotateStart = new THREE.Vector2();
 	var rotateEnd = new THREE.Vector2();
 	var rotateDelta = new THREE.Vector2();
 
 	var panStart = new THREE.Vector2();
+	var panCameraStart = new THREE.Vector2();
 	var panEnd = new THREE.Vector2();
-	var panDelta = new THREE.Vector2();
+	var panDelta = new THREE.Vector3();
 
 	var dollyStart = new THREE.Vector2();
 	var dollyEnd = new THREE.Vector2();
@@ -171,9 +184,16 @@ MappedIn.CameraControls = function (camera, canvas) {
 	function handleMouseDownPan( event ) {
 
 		//console.log( 'handleMouseDownPan' );
-		var mouse = mouseToScene(event)
+		//var mouse = mouseToScene(event)
 
-		panStart.set( mouse.x, mouse.y );
+		raycaster.setFromCamera( mouse, camera);
+
+		var intersection = raycaster.intersectObject(cameraPlane, false)[0]
+
+		//console.log("====" + intersection.point.x + ", " + intersection.point.y)
+
+		panStart.set( intersection.point.x, intersection.point.y );
+		panCameraStart.set(scope.orbit.position.x, scope.orbit.position.y)
 
 		//scope.panning = true
 		//scope.state = STATE.PAN
@@ -228,29 +248,60 @@ MappedIn.CameraControls = function (camera, canvas) {
 
 	}
 
+	//var hasRendered = true
 	function handleMouseMovePan( event ) {
 
+		// Create floor object
+		// raycast from mouse position to floor to set initial coordinates
+		// On mouse move:
+			// Move camera to difference between initial coordinates and new coordinates
+
+
 		//console.log( 'handleMouseMovePan' );
-		var mouse = mouseToScene(event)
-		panEnd.set( mouse.x, mouse.y );
+		//var mouse = mouseToScene(event)
+		hasRendered = false
+		raycaster.setFromCamera( mouse, camera);
+
+		var intersection = raycaster.intersectObject(cameraPlane, false)[0]
+		//console.log(intersection.point.x + ", " + intersection.point.y)
+		panEnd.set( intersection.point.x, intersection.point.y );
 
 		panDelta.subVectors( panEnd, panStart );
+		//panDelta.subVectors( panStart, panStart );
 
-		var angle = scope.orbit.rotation.z
-		var x = -panDelta.x * Math.cos(angle) - panDelta.y * Math.sin( angle )
-		var y = -panDelta.x * Math.sin(angle) + panDelta.y * Math.cos( angle )
-
-
-		pan(x / panXScale, y / panYScale)
+		// var rotation = scope.orbit.rotation.z // Need tilt and rotate here...
+		// var tilt = scope.elevation.rotation.x
+		
+		// // west/east
+		// var x = -panDelta.x * Math.cos( rotation ) - panDelta.y * Math.cos( rotation ) // * Math.cos(tilt)
+		// //north/south
+		// var y = -panDelta.x * Math.sin( rotation ) + panDelta.y * Math.cos( rotation ) * Math.cos(tilt)
+		// y = 0
+		//console.log(x + ", " + y)
+		//pan(x / panXScale, y / panYScale)
 		//pan(-panDelta.x / panXScale, panDelta.y / panYScale)
 		//setPosition(-panDelta.x / panXScale, panDelta.y / panYScale)
 
-		panStart.copy( panEnd );
+		//pan(-panDelta.x, -panDelta.y)
+		setPosition(panCameraStart.x - panDelta.x, panCameraStart.y - panDelta.y)
+
+
 
 		//scope.update();
 
 		scope.dispatchEvent(changeEvent)
+		
 
+	}
+
+	this.postRender = function () {
+		if (state == STATE.PAN) {
+			raycaster.setFromCamera( mouse, camera);
+			intersection = raycaster.intersectObject(cameraPlane, false)[0]
+			panStart.set( intersection.point.x, intersection.point.y );
+			panCameraStart.set(scope.orbit.position.x, scope.orbit.position.y)
+			//hasRendered = true
+		}
 	}
 
 	function handleMouseWheel( event ) {
@@ -283,7 +334,7 @@ MappedIn.CameraControls = function (camera, canvas) {
 	function onMouseDown( event ) {
 
 		if ( scope.enabled === false ) return;
-
+		mouseToScene(event)
 		event.preventDefault();
 
 		if (state == STATE.ZOOM) {
@@ -326,7 +377,7 @@ MappedIn.CameraControls = function (camera, canvas) {
 					//console.log("Bullet dodged")
 					return false
 				} else {
-					console.log(event)
+					//console.log(event)
 					onMouseUp(event)
 				}
 			}, false );
@@ -338,11 +389,12 @@ MappedIn.CameraControls = function (camera, canvas) {
 	}
 
 	function onMouseMove( event ) {
-		console.log("moved")
 
 		if ( scope.enabled === false ) return;
 
 		event.preventDefault();
+
+		mouseToScene(event)
 
 		if ( state === STATE.ROTATE ) {
 
@@ -565,14 +617,26 @@ MappedIn.CameraControls = function (camera, canvas) {
 		vector.z = 0;
 	}
 
+	function getMousePos(canvas, evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+          x: evt.clientX - rect.left,
+          y: evt.clientY - rect.top
+        };
+      }
+
 	// This doesn't really do anything anymore
 	function mouseToScene(event) {
-		var mouse = {}
+		//var mouse = {}
 		//mouse.x = ( event.clientX / scope.canvas.offsetWidth ) * 2 - 1;
 		//mouse.y = - ( event.clientY / scope.canvas.offsetHeight ) * 2 + 1;
 
-		mouse.x = event.clientX
-		mouse.y = event.clientY
+		// mouse.x = event.clientX
+		// mouse.y = event.clientY
+		var pos = getMousePos(scope.canvas, event)
+		mouse.x = ( pos.x / scope.canvas.width ) * 2 - 1;
+		mouse.y = - ( pos.y / scope.canvas.height ) * 2 + 1;
+		//console.log(scope.canvas)
 		return mouse
 	}
 
@@ -600,6 +664,8 @@ MappedIn.CameraControls = function (camera, canvas) {
 		document.removeEventListener( 'mousemove', onMouseMove, false );
 		document.removeEventListener( 'mouseup', onMouseUp, false );
 		document.removeEventListener( 'mouseout', onMouseUp, false );
+
+		scene.remove(cameraPlane)
 
 		//window.removeEventListener( 'keydown', onKeyDown, false );
 
