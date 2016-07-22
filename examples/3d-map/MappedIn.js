@@ -75,6 +75,7 @@ MappedIn.loadVenue = function(slug, fields) {
 	}
 
 	var loadVenue = function(results) {
+		// Should handle empty result
 		console.log("Venue data loaded")
 		venue.venue = results[0]
 	}
@@ -116,10 +117,12 @@ MappedIn.loadVenue = function(slug, fields) {
 		for (var map of results) {
 			venue.maps[map.id] = map
 		}
+		console.log(results)
 	}
 
 	// Pass along the first error we run into, otherwise give back the completed Venue
 	var dataLoaded = function (results) {
+
 		for (var i = 0; i < results.length; i++) {
 			var result = results[i]
 			var apiCall = apiCalls[i]
@@ -130,6 +133,10 @@ MappedIn.loadVenue = function(slug, fields) {
 			}
 
 			apiCall.handler(result[1])
+		}
+		if (venue.venue == null) {
+			p.done(new Error("Could not download venue. Does it exist? Check the slug and make sure your keys have access."), venue)
+			return p
 		}
 		console.log(venue.venue.name + " loaded")
 		p.done(null, venue)
