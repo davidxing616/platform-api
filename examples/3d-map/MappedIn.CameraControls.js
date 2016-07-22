@@ -96,8 +96,10 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 		scope.orbit.position.x += right
 		scope.orbit.position.y += down
+		scope.dispatchEvent(changeEvent)
 
 		if (state == STATE.NONE) {
+			scope.dispatchEvent(changeEvent)
 			scope.dispatchEvent(panEndEvent)
 		}
 	}
@@ -109,6 +111,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 		scope.orbit.position.x = x
 		scope.orbit.position.y = y
+		scope.dispatchEvent(changeEvent)
 
 		if (state ==  STATE.NONE) {
 			scope.dispatchEvent(panEndEvent)
@@ -121,8 +124,10 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 		}
 
 		scope.orbit.rotation.z += radians
+		scope.dispatchEvent(changeEvent)
 
 		if (state == STATE.NONE) {
+			
 			scope.dispatchEvent(rotateEndEvent)
 		}
 	}
@@ -133,6 +138,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 			scope.dispatchEvent(rotateStartEvent)
 		}
 		scope.elevation.rotation.x = Math.max(Math.min(scope.elevation.rotation.x + radians, scope.maxTilt), scope.minTilt)
+		scope.dispatchEvent(changeEvent)
 
 		if (state == STATE.NONE) {
 			scope.dispatchEvent(rotateEndEvent)
@@ -151,6 +157,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 		}
 
 		scope.camera.position.z = Math.min(Math.max(zoom, scope.minZoom), scope.maxZoom)
+		scope.dispatchEvent(changeEvent)
 
 		if (state == STATE.NONE) {
 			scope.dispatchEvent(zoomEndEvent)
@@ -158,7 +165,6 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 	}
 
 	function handleMouseDownRotate( event ) {
-
 		//console.log( 'handleMouseDownRotate' );
 
 		rotateStart.set( event.clientX, event.clientY );
@@ -300,6 +306,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 			intersection = raycaster.intersectObject(cameraPlane, false)[0]
 			panStart.set( intersection.point.x, intersection.point.y );
 			panCameraStart.set(scope.orbit.position.x, scope.orbit.position.y)
+
 			//hasRendered = true
 		}
 	}
@@ -648,6 +655,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 			state = STATE.NONE
 			scope.dispatchEvent(zoomEndEvent)
 		}
+		//rotate(.01)
 	}
 
 	this.dispose = function() {
