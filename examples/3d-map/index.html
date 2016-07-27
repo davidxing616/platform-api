@@ -23,19 +23,23 @@
 		<script src="externals/Projector.js"></script>
 		<script src="./index.js"></script>
 		<script>
+
 			var venueId = '';
 		
 			// DEV/TESTING: Use the token.html utility to retrieve your 48h API access token. Paste the results in here as the definition for token
 			// PROCUTION: Retrieve the access token dynamically from your server, which holds your API key and secret and does the OATH authentication itself
 			MappedIn.token = {}
-
 			if (Object.keys(MappedIn.token).length == 0) {
 				document.write("EMTPY TOKEN! For testing you can use Token.html to calculate your temporary access token, and paste it into index.html")
 			}
 			init(venueId);
-		</script>
 
+		</script>
+		<select id="mapList"
+			onchange = "changeMap()">
+		</select>
 		<div id="mapView"></div>
+
 
 	</body>
 </html>

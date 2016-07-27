@@ -62,33 +62,71 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		}
 	}
 
-	var mtlLoaded = function (materials) {
-
-		//console.log(this.venue.maps[this.currentMap].scene.obj)
-		materials.preload();
-		var mapId = Object.keys(scope.venue.maps)[0]
-		var obj = scope.venue.maps[scope.currentMap].scene.obj
-		var objLoader = new THREE.OBJLoader();
-		objLoader.setMaterials( materials );
-		objLoader.load( obj, objLoaded, onDownloadEvent, onDownloadEvent)
-	}
-
 	var onDownloadEvent = function (event) {
 
 	}
 
-	var objLoaded = function (object) {
-		scope.scene.add( object );
-		//this.maps[this.currentMap].objectsDictionary = {}
-		for (child of object.children) {
-			scope.maps[scope.currentMap].objectsDictionary[child.name] = child
-			child.material.side = THREE.DoubleSide
-			//console.log(child)
+	this.setMap = function(map) {
+		var mapId = map.id
+		var firstLoad = true
+		if (scope.currentMap) {
+			firstLoad = false
+			scope.scene.remove(scope.venue.maps[scope.currentMap].map)
+		}
+		scope.currentMap = mapId
+		if (map.map == null) {
+			//var mapId = map.id
+			var objLoaded = function (object) {
+				scope.scene.add( object );
+
+				console.log(mapId)
+				console.log(scope.venue.maps)
+				map.objectsDictionary = {}
+				for (child of object.children) {
+
+					//scope.venue.maps[mapId]
+					map.objectsDictionary[child.name] = child
+					child.material.side = THREE.DoubleSide
+					//console.log(child)
+				}
+				map.map = object
+				scope.venue.maps[mapId] = map
+				scope.tryRendering();
+				if (firstLoad) {
+					console.log("Firing mapLoadedCallback")
+					mapLoadedCallback()
+				}
+			}
+
+
+			var mtlLoaded = function (materials) {
+
+				//console.log(this.venue.maps[this.currentMap].scene.obj)
+				materials.preload();
+				var obj = scope.venue.maps[mapId].scene.obj
+				var objLoader = new THREE.OBJLoader();
+				objLoader.setMaterials( materials );
+				objLoader.load( obj, objLoaded, onDownloadEvent, onDownloadEvent)
+			}
+
+			//this.maps[this.currentMap] = new MappedIn.Map(this.currentMap)
+			var mtl = this.venue.maps[this.currentMap].scene.mtl
+			//console.log(mtl)
+			var mtlLoader = new THREE.MTLLoader();
+			mtlLoader.crossOrigin='*'
+			mtlLoader.scene = this.scene
+
+			var baseUrlRegex = new RegExp(".*\/")
+			var baseUrl = baseUrlRegex.exec(mtl)[0]
+
+			mtlLoader.setBaseUrl( baseUrl);
+			mtlLoader.load( mtl, mtlLoaded);
+		} else {
+			scope.scene.add(map.map)
+			scope.tryRendering();
+			//mapLoadedCallback()
 		}
 
-		scope.maps[scope.currentMap].map = object
-		scope.tryRendering();
-		mapLoadedCallback()
 	}
 
 	function getMousePos(canvas, evt) {
@@ -303,7 +341,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	this.getPositionPolygon = function (polygonId) {
-		var target = scope.maps[scope.currentMap].objectsDictionary[polygonId]
+		var target = scope.venue.maps[scope.currentMap].objectsDictionary[polygonId]
 		if(target) {
 			// Not true center
 			target.geometry.computeBoundingBox()
@@ -435,7 +473,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		rayDirection.applyQuaternion(textMesh.quaternion)
 		var raycaster = new THREE.Raycaster(rayPosition, rayDirection, textMesh.rotation)
-		var intersects = raycaster.intersectObject(scope.maps[scope.currentMap].objectsDictionary[polygon.id])
+		var intersects = raycaster.intersectObject(scope.venue.maps[scope.currentMap].objectsDictionary[polygon.id])
 
 		var distance = size.x + 40
 
@@ -726,22 +764,20 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 
 	//Need to handle multi-maps
-	this.currentMap = Object.keys(this.venue.maps)[0]
-	this.maps[this.currentMap] = new MappedIn.Map(this.currentMap)
-	var mtl = this.venue.maps[this.currentMap].scene.mtl
-	//console.log(mtl)
-	var mtlLoader = new THREE.MTLLoader();
-	mtlLoader.crossOrigin='*'
-	mtlLoader.scene = this.scene
-	// Set this dynamically later
 
-	var baseUrlRegex = new RegExp(".*\/")
-	var baseUrl = baseUrlRegex.exec(mtl)[0]
+	//console.log(Object.keys(this.venue.maps))[0]
 
-	mtlLoader.setBaseUrl( baseUrl);
-	
-	mtlLoader.load( mtl, mtlLoaded);
+	var map
+	if (venue.venue.defaultMap ) {
+		map = venue.maps[venue.venue.defaultMap]
+	}
 
+	if (!map) {
+		map = venue.maps[Object.keys(venue.maps)[0]]
+	}
+
+	this.setMap(map)
+	console.log(scope.currentMap)
 
 	// Set up physics
 	var physics = Matter.Engine.create({

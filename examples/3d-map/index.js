@@ -61,9 +61,11 @@ function initPostMapLoaded() {
 
 	var i = 0
 	for (locationId of Object.keys(venue.locations)) {
+
 		var location = venue.locations[locationId]
 
 		if (drawLabels || testLocations.indexOf(location.name) >= 0) {
+			console.log(locationId)
 			mapView.displayTitle(location)
 		}
 		for (polygon of location.polygons) {
@@ -73,11 +75,35 @@ function initPostMapLoaded() {
 			}
 		}
 		i++
-		if (i > 5) {
+		if (i >5) {
 			//break
 		}	
 	}
 
+	for (node of Object.keys(venue.nodes)) {
+		//mapView.showNode(venue.nodes[node])
+	}
+
+	var mapList = document.getElementById("mapList")
+	console.log(venue.maps)
+	for (mapId of Object.keys(venue.maps)) {
+		console.log("Adding " + map)
+		var map = venue.maps[mapId]
+		var item = document.createElement("option")
+		item.text = map.shortName
+		item.value = map.id
+		if (mapId == mapView.currentMap) {
+			item.selected = true
+		}
+		mapList.add(item)
+	}
+
+}
+
+function changeMap() {
+	console.log("changing map!")
+	var mapList = document.getElementById("mapList")
+	mapView.setMap(venue.maps[mapList.value])
 }
 
 
