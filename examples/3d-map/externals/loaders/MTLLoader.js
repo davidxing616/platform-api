@@ -346,6 +346,7 @@ THREE.MTLLoader.MaterialCreator.prototype = {
 					if ( value < 1 || materialName.indexOf("_image") > 0) {
 						params[ 'opacity' ] = value;
 						params[ 'transparent' ] = true;
+						params[ 'alphaTest' ] = 0.1
 					}
 
 					break;
