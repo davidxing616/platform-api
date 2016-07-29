@@ -23,8 +23,9 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	this.scene.add(cameraOrbit)
 
 	this.currentMap = null
-	this.maps = {}
+	this.mapObjects = {}
 	this.font = {}
+
 
 	var clock = new THREE.Clock(true)
 
@@ -40,6 +41,77 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	var renderer = new THREE.WebGLRenderer({"antialias": true})
 	var projector = new THREE.Projector()
 
+	// Internal class to keep track of the ThreeJS map object - Whether it's downloaded, and what polygonIds match which children
+	// Load returns a promise which will be done when the OBJ, MTL, and textures have been downloaded
+	var MapObject = function (id) {
+		this.id = id
+		this.object = {}
+		this.objectsDictionary = {}
+
+		this.onProgress = function () {}
+
+		var started = false
+		var mapObj = this
+		var loaderPromise = new promise.Promise()
+			//var mapId = map.id
+		var objLoaded = function (object) {
+			//console.log("OBJ loaded for " + id)
+
+			for (child of object.children) {
+
+				mapObj.objectsDictionary[child.name] = child
+				child.material.side = THREE.DoubleSide
+
+			}
+			mapObj.object = object
+
+			console.log("MapOBJ loaded " + id)
+			loaderPromise.done(null, mapObj)
+		}
+
+
+		var mtlLoaded = function (materials) {
+
+			//console.log("MTL loaded for " + id)
+			materials.preload();
+			var obj = scope.venue.maps[mapObj.id].scene.obj
+			var objLoader = new THREE.OBJLoader();
+			objLoader.setMaterials( materials );
+			objLoader.load( obj, objLoaded, mapObj.onProgress, loaderPromise.done); 
+		}
+
+		//this.maps[this.currentMap] = new MappedIn.Map(this.currentMap)
+		
+		/***
+		Load the map, if it's not already loaded. Returns the old promise if it's already done, so you can safely call it whenever needed.
+
+		If needed, this could be modified to 
+		
+		Returns a Promise that will be Done when the OBJ, MTL and textures have been downloaded, and the objectsDictionary has been generated.
+
+		**/
+		this.load = function() {
+			if (started ) {
+				//console.log("Already started loading " + id)
+				return loaderPromise
+			} else {
+				started = true
+				//console.log("Loading " + id)
+				var mtl = scope.venue.maps[mapObj.id].scene.mtl
+				//console.log(mtl)
+				var mtlLoader = new THREE.MTLLoader();
+				mtlLoader.crossOrigin='*'
+				mtlLoader.scene = this.scene
+
+				var baseUrlRegex = new RegExp(".*\/")
+				var baseUrl = baseUrlRegex.exec(mtl)[0]
+
+				mtlLoader.setBaseUrl( baseUrl);
+				mtlLoader.load( mtl, mtlLoaded);
+				return loaderPromise
+			}
+		}
+	}
 
 	var onMakerCollisionStart = function(event) {
 		for (pair of event.pairs) {
@@ -62,70 +134,34 @@ MappedIn.MapView = function(canvas, venue, callback) {
 		}
 	}
 
-	var onDownloadEvent = function (event) {
-
-	}
-
-	this.setMap = function(map) {
-		var mapId = map.id
-		var firstLoad = true
-		if (scope.currentMap) {
-			firstLoad = false
-			scope.scene.remove(scope.venue.maps[scope.currentMap].map)
-		}
-		scope.currentMap = mapId
-		if (map.map == null) {
-			//var mapId = map.id
-			var objLoaded = function (object) {
-				scope.scene.add( object );
-
-				console.log(mapId)
-				console.log(scope.venue.maps)
-				map.objectsDictionary = {}
-				for (child of object.children) {
-
-					//scope.venue.maps[mapId]
-					map.objectsDictionary[child.name] = child
-					child.material.side = THREE.DoubleSide
-					//console.log(child)
-				}
-				map.map = object
-				scope.venue.maps[mapId] = map
-				scope.tryRendering();
-				if (firstLoad) {
-					console.log("Firing mapLoadedCallback")
-					mapLoadedCallback()
-				}
+	this.setMap = function(mapId) {
+		//var mapId = map.id
+		//var firstLoad = true
+		var mapObject = scope.mapObjects[mapId]
+		if (mapObject) {
+			if (scope.currentMap) {
+				//firstLoad = false
+				console.log("Removing " + scope.currentMap)
+				scope.scene.remove(scope.mapObjects[scope.currentMap].object)
 			}
+			scope.currentMap = mapId
+			// if (map.map == null) {
 
-
-			var mtlLoaded = function (materials) {
-
-				//console.log(this.venue.maps[this.currentMap].scene.obj)
-				materials.preload();
-				var obj = scope.venue.maps[mapId].scene.obj
-				var objLoader = new THREE.OBJLoader();
-				objLoader.setMaterials( materials );
-				objLoader.load( obj, objLoaded, onDownloadEvent, onDownloadEvent)
-			}
-
-			//this.maps[this.currentMap] = new MappedIn.Map(this.currentMap)
-			var mtl = this.venue.maps[this.currentMap].scene.mtl
-			//console.log(mtl)
-			var mtlLoader = new THREE.MTLLoader();
-			mtlLoader.crossOrigin='*'
-			mtlLoader.scene = this.scene
-
-			var baseUrlRegex = new RegExp(".*\/")
-			var baseUrl = baseUrlRegex.exec(mtl)[0]
-
-			mtlLoader.setBaseUrl( baseUrl);
-			mtlLoader.load( mtl, mtlLoaded);
+			// } else {
+			// 	scope.scene.add(map.map)
+			// 	scope.tryRendering();
+			// 	//mapLoadedCallback()
+			// }
+			console.log("Loading " + mapId)
+			mapObject.load().then(function (error, mapObject) {
+				console.log("Loaded " + mapId)
+				scope.scene.add(mapObject.object)
+				scope.tryRendering()
+			})
 		} else {
-			scope.scene.add(map.map)
-			scope.tryRendering();
-			//mapLoadedCallback()
+			console.log("No map object for " + mapId)
 		}
+
 
 	}
 
@@ -341,7 +377,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	}
 
 	this.getPositionPolygon = function (polygonId) {
-		var target = scope.venue.maps[scope.currentMap].objectsDictionary[polygonId]
+		var target = scope.mapObjects[scope.currentMap].objectsDictionary[polygonId]
 		if(target) {
 			// Not true center
 			target.geometry.computeBoundingBox()
@@ -473,7 +509,7 @@ MappedIn.MapView = function(canvas, venue, callback) {
 
 		rayDirection.applyQuaternion(textMesh.quaternion)
 		var raycaster = new THREE.Raycaster(rayPosition, rayDirection, textMesh.rotation)
-		var intersects = raycaster.intersectObject(scope.venue.maps[scope.currentMap].objectsDictionary[polygon.id])
+		var intersects = raycaster.intersectObject(scope.mapObjects[scope.currentMap].objectsDictionary[polygon.id])
 
 		var distance = size.x + 40
 
@@ -762,22 +798,44 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	//this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_START_EVENT.type, freezeMarkers)
 	//this.controls.addEventListener(this.controls.CAMERA_EVENTS.PAN_END_EVENT.type, thawMarkers)
 
-
-	//Need to handle multi-maps
-
-	//console.log(Object.keys(this.venue.maps))[0]
-
-	var map
+	// Display the default map if it's set, otherwise use just first one (which is in an undefined order)
+	var startingMap
 	if (venue.venue.defaultMap ) {
-		map = venue.maps[venue.venue.defaultMap]
+		startingMap = venue.maps[venue.venue.defaultMap]
+	} else {
+		startingMap = Object.keys(venue.maps)[0]
+	}
+	//console.log("Starting map: " + startingMap)
+
+	for (map of Object.keys(this.venue.maps)) {
+		
+		var mapObj = new MapObject(map)
+		scope.mapObjects[map] = mapObj
+		console.log(mapObj)
+		if (map == startingMap) {
+			//console.log("Preparting " + map)
+			scope.setMap(map)
+			mapObj.load().then(function (error, result) {
+				if (error) {
+					// Consider a failure callback
+					console.log(error)
+				} else {
+					mapLoadedCallback()
+				}			
+			})
+		} else {
+			// Maybe preloading is an option?
+			// Is there a situation where you don't want to do it?
+			// This doesn't actually totally preload, there is still a delay the first time the object is added to the scene.
+			// Should either fix that, or put some wait animation when the map is switching, or add some sort of callback to the the developer do the same
+			// Could also handle this as part of map transition animations
+			//console.log("Preloading " + map)
+			mapObj.load().then(function (error, result) {
+				//console.log("Map " +  result.id + " preloaded")
+			})
+		}
 	}
 
-	if (!map) {
-		map = venue.maps[Object.keys(venue.maps)[0]]
-	}
-
-	this.setMap(map)
-	console.log(scope.currentMap)
 
 	// Set up physics
 	var physics = Matter.Engine.create({
@@ -838,5 +896,5 @@ MappedIn.MapView = function(canvas, venue, callback) {
 	// Tie this into the render loop someday, if we can
 	//var runner = Matter.Engine.run(physics);
 
-	this.tryRendering();
+	//this.tryRendering();
 }
