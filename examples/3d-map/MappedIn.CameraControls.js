@@ -36,6 +36,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 	var state = STATE.NONE;
 
 	var mouse = new THREE.Vector2();
+	var touches = [];
 
 	var rotateStart = new THREE.Vector2();
 	var rotateEnd = new THREE.Vector2();
@@ -301,7 +302,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 	}
 
 	this.postRender = function () {
-		if (state == STATE.PAN) {
+		if (state == STATE.PAN || state == STATE.TOUCH_PAN) {
 			raycaster.setFromCamera( mouse, camera);
 			intersection = raycaster.intersectObject(cameraPlane, false)[0]
 			panStart.set( intersection.point.x, intersection.point.y );
@@ -471,18 +472,60 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 	}
 
 
+	function handleTouchStartPan( event ) {
+
+		// Could probably avoid some code duplication
+		var pos = touches[0]
+		raycaster.setFromCamera( pos, camera);
+
+		var intersection = raycaster.intersectObject(cameraPlane, false)[0]
+
+		//console.log("====" + intersection.point.x + ", " + intersection.point.y)
+
+		panStart.set( intersection.point.x, intersection.point.y );
+		panCameraStart.set(scope.orbit.position.x, scope.orbit.position.y)
+
+		//scope.panning = true
+		//scope.state = STATE.PAN
+		scope.dispatchEvent(panStartEvent)
+
+	}
+
+	function handleTouchMovePan( event ) {
+		var pos = touches[0]
+		hasRendered = false
+		raycaster.setFromCamera( pos, camera);
+
+		var intersection = raycaster.intersectObject(cameraPlane, false)[0]
+
+		panEnd.set( intersection.point.x, intersection.point.y );
+
+		panDelta.subVectors( panEnd, panStart );
+
+		setPosition(panCameraStart.x - panDelta.x, panCameraStart.y - panDelta.y)
+
+
+		scope.dispatchEvent(changeEvent)
+	}
+
+	function handleTouchEnd( event ) {
+
+		//console.log( 'handleTouchEnd' );
+
+	}
 
 	function onTouchStart( event ) {
 
 		if ( scope.enabled === false ) return;
 
+		touchToScene(event)
 		switch ( event.touches.length ) {
 
 			case 1:	// one-fingered touch: pan
 
 				if ( scope.enableRotate === false ) return;
 
-				//handleTouchStartPan( event );
+				handleTouchStartPan( event );
 
 				state = STATE.TOUCH_PAN;
 
@@ -528,10 +571,11 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 		event.preventDefault();
 		event.stopPropagation();
-
+		
+		touchToScene(event)
 		switch ( event.touches.length ) {
 
-			case 1: // one-fingered touch: rotate
+			case 2: // one-fingered touch: rotate
 
 				if ( scope.enableRotate === false ) return;
 				if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
@@ -540,7 +584,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 				break;
 
-			case 2: // two-fingered touch: dolly
+			case 3: // two-fingered touch: pan
 
 				if ( scope.enableZoom === false ) return;
 				if ( state !== STATE.TOUCH_DOLLY ) return; // is this needed?...
@@ -549,7 +593,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 				break;
 
-			case 3: // three-fingered touch: pan
+			case 1: // One-fingered touch: pan
 
 				if ( scope.enablePan === false ) return;
 				if ( state !== STATE.TOUCH_PAN ) return; // is this needed?...
@@ -632,6 +676,14 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
         };
       }
 
+     function getTouchPos(canvas, touch) {
+     	var rect = canvas.getBoundingClientRect();
+        return {
+          x: touch.pageX - rect.left,
+          y: touch.pageY - rect.top
+        };
+     }
+
 	// This doesn't really do anything anymore
 	function mouseToScene(event) {
 		//var mouse = {}
@@ -647,6 +699,16 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 		return mouse
 	}
 
+	function touchToScene(event) {
+
+		touches = []
+		for (touch of event.touches) {
+			var pos = getTouchPos(scope.canvas, touch)
+			touches.push(new THREE.Vector2(( pos.x / scope.canvas.width ) * 2 - 1, - ( pos.y / scope.canvas.height ) * 2 + 1))
+		}
+		mouse = touches[0]
+	}
+
 	// Anything we need to do on scene render
 	this.update = function() {
 		//console.log("update: " + clock.getElapsedTime())
@@ -655,7 +717,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 			state = STATE.NONE
 			scope.dispatchEvent(zoomEndEvent)
 		}
-		//rotate(.01)
+		//rotate(2.0944)
 	}
 
 	this.dispose = function() {
