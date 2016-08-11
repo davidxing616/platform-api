@@ -103,7 +103,7 @@ function initPostMapLoaded() {
 function changeMap() {
 	console.log("changing map!")
 	var mapList = document.getElementById("mapList")
-	mapView.setMap(venue.maps[mapList.value])
+	mapView.setMap(mapList.value)
 }
 
 
