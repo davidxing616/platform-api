@@ -51,6 +51,9 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 	var dollyEnd = new THREE.Vector2();
 	var dollyDelta = new THREE.Vector2();
 
+	var touchZoomDistanceStart;
+	var touchZoomDistanceEnd;
+
 	var rotateScale = new THREE.Vector3();
 	var rotateTranslation = new THREE.Vector3();
 	var rotateQuaternion = new THREE.Quaternion();
@@ -508,6 +511,23 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 		scope.dispatchEvent(changeEvent)
 	}
 
+	function handleTouchStartDolly ( event ) {
+		var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+		var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+		touchZoomDistanceStart = touchZoomDistanceEnd = Math.sqrt( dx * dx + dy * dy ) + camera.position.z;
+
+	scope.dispatchEvent(zoomStartEvent)
+	}
+
+	function handleTouchMoveDolly ( event ) {
+		var dx = event.touches[ 0 ].pageX - event.touches[ 1 ].pageX;
+		var dy = event.touches[ 0 ].pageY - event.touches[ 1 ].pageY;
+		touchZoomDistanceEnd = touchZoomDistanceStart - Math.sqrt( dx * dx + dy * dy ) ;
+
+		zoom(touchZoomDistanceEnd)
+	}
+
+
 	function handleTouchEnd( event ) {
 
 		//console.log( 'handleTouchEnd' );
@@ -535,7 +555,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 				if ( scope.enableZoom === false ) return;
 
-				//handleTouchStartDolly( event );
+				handleTouchStartDolly( event );
 
 				state = STATE.TOUCH_DOLLY;
 
@@ -575,7 +595,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 		touchToScene(event)
 		switch ( event.touches.length ) {
 
-			case 2: // one-fingered touch: rotate
+			case 3: // one-fingered touch: rotate
 
 				if ( scope.enableRotate === false ) return;
 				if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
@@ -584,7 +604,7 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
 
 				break;
 
-			case 3: // two-fingered touch: pan
+			case 2: // two-fingered touch: zoom
 
 				if ( scope.enableZoom === false ) return;
 				if ( state !== STATE.TOUCH_DOLLY ) return; // is this needed?...
@@ -682,6 +702,14 @@ MappedIn.CameraControls = function (camera, canvas, scene) {
           x: touch.pageX - rect.left,
           y: touch.pageY - rect.top
         };
+     }
+
+     function raycast(pos) {
+		hasRendered = false
+		raycaster.setFromCamera( pos, camera);
+
+		var intersection = raycaster.intersectObject(cameraPlane, false)[0]
+		return intersection.point
      }
 
 	// This doesn't really do anything anymore
